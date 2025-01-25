@@ -1,0 +1,43 @@
+name: Create S3 Static Site
+
+on:
+  issue_comment:
+    types:
+      - opened
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout o repositório
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # 2. Configurar a CLI do Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.7  # Altere para a versão que está utilizando
+
+      # 3. Definir variáveis de ambiente para o bucket
+      - name: Set Bucket Name
+        run: echo "BUCKET_NAME=my-unique-bucket-name" >> $GITHUB_ENV
+
+      # 4. Executar os comandos do Terraform
+      - name: Run Terraform
+        run: |
+          cd terraform
+          cd S3-bucket-name
+          terraform init
+          terraform apply -auto-approve -var="bucket_name=${{ env.BUCKET_NAME }}"
+
+      # 5. Comentar na issue do GitHub
+      - name: Add Comment
+        run: gh issue comment "$NUMBER" --repo "$REPO" --body "$BODY"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+          BODY: |
+            O bucket S3 foi criado com sucesso! 🎉
